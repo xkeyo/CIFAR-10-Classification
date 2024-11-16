@@ -62,11 +62,12 @@ test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
 # Load the pre-trained ResNet18 model with the default weights
 model = resnet18(weights=ResNet18_Weights.DEFAULT)
+model = nn.Sequential(*list(model.children())[:-1])  # Remove the last layer
 
 # Set the model to evaluation mode
 model.eval()
 
-# Function to extract the features from the model
+# Function to extract the features and labels from the model 
 def extract_features(model, loader):
     features = []
     labels = []
@@ -74,7 +75,7 @@ def extract_features(model, loader):
         for images, target in loader:
             # Pass image through the model to get the features
             output = model(images)
-            output = output.view(output.size(0), -1)
+            output = output.view(output.size(0), -1) # Flatten features
             features.append(output)
             labels.append(target)
 
@@ -84,7 +85,7 @@ def extract_features(model, loader):
 
     return features, labels
 
-# Extract the features from the model
+# Extract the features from the model (512 x 1)
 train_features, train_labels = extract_features(model, train_loader)
 test_features, test_labels = extract_features(model, test_loader)
 
@@ -101,6 +102,13 @@ def get_train_features_pca():
 
 def get_test_features_pca():    
     return test_features_pca
+
+# Getters for labels
+def get_train_labels():
+    return train_labels
+
+def get_test_labels():    
+    return test_labels
 
 # # Print the shape of the transformed features
 # print(train_features_pca.shape)
