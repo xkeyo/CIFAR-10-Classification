@@ -62,7 +62,9 @@ test_loader = DataLoader(test_data, batch_size=32, shuffle=False)
 
 # Load the pre-trained ResNet18 model with the default weights
 model = resnet18(weights=ResNet18_Weights.DEFAULT)
-model = nn.Sequential(*list(model.children())[:-1])  # Remove the last layer
+
+# Remove the last layer of the ResNet18 model
+model = nn.Sequential(*list(model.children())[:-1])
 
 # Set the model to evaluation mode
 model.eval()
