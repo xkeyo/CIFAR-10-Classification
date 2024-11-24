@@ -22,13 +22,13 @@ def evaluate_model(model_name, true_labels, predicted_labels, class_labels):
     conf_matrix = confusion_matrix(true_labels, predicted_labels)
 
     # Plot Confusion Matrix
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 7))
     plt.imshow(conf_matrix, interpolation='nearest', cmap=plt.cm.Blues)
-    plt.title(f"Confusion Matrix for {model_name}")
     plt.colorbar()
-    tick_marks = np.arange(len(class_labels)) if class_labels else np.arange(len(np.unique(true_labels)))
-    plt.xticks(tick_marks, class_labels, rotation=45)
+    tick_marks = np.arange(len(class_labels))
+    plt.xticks(tick_marks, class_labels)
     plt.yticks(tick_marks, class_labels)
+    plt.title(f"Confusion Matrix for {model_name}")
     plt.ylabel('True Label')
     plt.xlabel('Predicted Label')
 

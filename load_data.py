@@ -8,6 +8,8 @@ import torchvision.transforms as transforms
 # Libraries used for data loading and prepaing the dataset subset
 from torchvision.datasets import CIFAR10
 from torch.utils.data import DataLoader, Subset
+import random
+from torch.utils.data import random_split
 
 # Library used for extracting features from the model using ResNet18
 from torchvision.models import resnet18, ResNet18_Weights
@@ -15,6 +17,8 @@ from torchvision.models import resnet18, ResNet18_Weights
 # Library used for PCA dimensionality reduction
 from sklearn.decomposition import PCA
 
+# Set a random seed for reproducibility
+random.seed(42)
 
 # Directory to save the processed data
 feature_dir = "./processed_data"
@@ -74,24 +78,34 @@ else:
     # Number of classes needed for CIFAR-10
     num_classes = 10
 
-    # Function used to get only a subset of the dataset with a specified number of images per class
-    def get_class_subset(dataset, class_count):
+    # Function to get a subset of the dataset without any overlapping classes
+    def get_class_subset(dataset, class_count, exclude_indices=None):
+        # Initialize a dictionary to keep track of the class counts
         class_counts = {i: 0 for i in range(num_classes)}
-        indices = []
 
-        for idx, (_, label) in enumerate(dataset):
-            if class_counts[label] < class_count:
-                indices.append(idx)
+        # Shuffle the indices to avoid any overlapping between classes
+        indices = list(range(len(dataset)))
+        random.shuffle(indices)
+        exclude_indices = exclude_indices or set()
+
+        # Get a subset of the dataset without any overlapping classes
+        subset_indices = []
+        # Iterate over the indices to add images to the subset 
+        for idx in indices:
+            _, label = dataset[idx]
+            # Check if the class count for the current label is less than the class count and the index is not in the exclude indices
+            if idx not in exclude_indices and class_counts[label] < class_count:
+                subset_indices.append(idx)
                 class_counts[label] += 1
-            # Stop when we have enough samples for each class
-            if all(count >= class_count for count in class_counts.values()):
+            # Check if all the class counts are bigger than the class count
+            if all(count >= class_count for count in class_counts):
                 break
 
-        return Subset(dataset, indices)
+        return Subset(dataset, subset_indices), set(subset_indices)
 
-    # Dataset subset for only 500 training and 100 testing images per class 
-    train_data = get_class_subset(train_dataset, train_images_per_class)
-    test_data = get_class_subset(test_dataset, test_images_per_class)
+    # Get the subset of the dataset
+    train_data, train_indices = get_class_subset(train_dataset, train_images_per_class)
+    test_data, test_indices = get_class_subset(test_dataset, test_images_per_class, exclude_indices=train_indices)
 
     # Check size of the subset dataset
     print(f"\nSubset train data size: {len(train_data)}")
@@ -107,26 +121,29 @@ else:
     print(f"\nUsing device: {device}")
 
     # Load the pre-trained ResNet18 model with the default weights 
-    model = resnet18(weights=ResNet18_Weights.DEFAULT)
+    resnet_model = resnet18(weights=ResNet18_Weights.DEFAULT)
 
     # Remove the last layer of the ResNet18 model to get the features
-    model = nn.Sequential(*list(model.children())[:-1])
+    resnet_model = nn.Sequential(*list(resnet_model.children())[:-1])
 
     # Move model to cuda or CPU device
-    model = model.to(device)
+    resnet_model = resnet_model.to(device)
 
     # Set the model to evaluation mode to get the features
-    model.eval()
+    resnet_model.eval()
 
     # Function to extract the features and labels from the model
     def extract_features(model, loader):
+        # Initialize lists to store the features and labels
         features = []
         labels = []
+        # Loop over the dataset to get the features and labels
         with torch.no_grad():
             for images, target in loader:
                 # Pass image through the model to get the features
                 output = model(images)
                 output = output.view(output.size(0), -1) # Flatten features
+                # Add the features and labels to the lists
                 features.append(output)
                 labels.append(target)
 
@@ -137,8 +154,8 @@ else:
         return features, labels
 
     # Extract the features from the model (512 x 1)
-    train_features, train_labels = extract_features(model, train_loader)
-    test_features, test_labels = extract_features(model, test_loader)
+    train_features, train_labels = extract_features(resnet_model, train_loader)
+    test_features, test_labels = extract_features(resnet_model, test_loader)
 
     # Check size of the features and labels 
     print(f"\nTrain features: {train_features.shape}")

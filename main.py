@@ -14,9 +14,17 @@ from load_data import get_test_features_pca, get_train_features_pca, get_train_l
 from naives_bayes import GaussianNaiveBayes
 from sklearn.naive_bayes import GaussianNB
 
-#
+# Import the Decision Tree model from the tree file and the sklearn Decision Tree model
 from sklearn.tree import DecisionTreeClassifier
 from tree import DecisionTree
+
+# Import the MLP models from the mlp file
+from MLP.mlp_functions import train_mlp_model, predict_mlp
+import MLP.mlp as mlp_base
+import MLP.mlp_variant1 as mlp_1
+import MLP.mlp_variant2 as mlp_2
+import MLP.mlp_variant3 as mlp_3
+import MLP.mlp_variant4 as mlp_4
 
 # Import the evaluation functions to show the performance of the models
 from evaluation import evaluate_model, summarize_metrics
@@ -48,7 +56,12 @@ if __name__ == "__main__":
         "custom_naives_bayes": os.path.join(model_dir, "custom_naives_bayes.pt"),
         "sklearn_naives_bayes": os.path.join(model_dir, "sklearn_naives_bayes.pt"),
         "sklearn_decision_tree": os.path.join(model_dir, "sklearn_decision_tree.pt"),
-        "custom_decision_tree": os.path.join(model_dir, "custom_decision_tree.pt")
+        "custom_decision_tree": os.path.join(model_dir, "custom_decision_tree.pt"),
+        "mlp_base": os.path.join(model_dir, "mlp_base.pt"),
+        "mlp_1": os.path.join(model_dir, "mlp_1.pt"),
+        "mlp_2": os.path.join(model_dir, "mlp_2.pt"),
+        "mlp_3": os.path.join(model_dir, "mlp_3.pt"),
+        "mlp_4": os.path.join(model_dir, "mlp_4.pt")
     }
 
     # Get the training features and labels and tesing features and labels
@@ -111,8 +124,6 @@ if __name__ == "__main__":
     metrics_summary["Sklearn Naive Bayes"] = sklearn_naives_bayes_metrics
     print(f"\nSklearn Gaussian Naive Bayes model metrics: {sklearn_naives_bayes_metrics}")
 
-    
-    
   # -------------------- Sklearn implemented Decision Tree model -------------------- #
 
     if os.path.exists(file_path["sklearn_decision_tree"]):
@@ -163,7 +174,61 @@ if __name__ == "__main__":
     metrics_summary["Custom Decision Tree"] = custom_decision_tree_metrics
     print(f"\nCustom Decision Tree model metrics: {custom_decision_tree_metrics}")
 
+    # -------------------- Multi-layer Perceptron model (MLP)-------------------- #
+
+    # Dictionary of all the different MLP models
+    models = {
+        "mlp_base": mlp_base.MLP(),
+        "mlp_1": mlp_1.MLP(),
+        "mlp_2": mlp_2.MLP(),
+        "mlp_3": mlp_3.MLP(),
+        "mlp_4": mlp_4.MLP()
+    }
+
+    # Convert featutures and lables to tensors
+    train_features_tensor = torch.tensor(train_features_pca, dtype=torch.float32)
+    train_labels_tensor = train_labels.clone().detach().to(dtype=torch.long)
+    test_features_tensor = torch.tensor(test_features_pca, dtype=torch.float32)
+    test_labels_tensor = test_labels.clone().detach().to(dtype=torch.long)
+
+    # Loop over the MLP models
+    for model_name, model in models.items():
+
+        # Check if the model is already trained then load it
+        if os.path.exists(file_path[model_name]):
+            # Load model from file
+            print(f"\nLoading model from {file_path[model_name]}")
+            model = load_model(file_path[model_name])
+        
+        # If model is not trained, train it
+        else:
+            # Train the model
+            print(f"\nTraining {model_name} model...")
+
+            # Train the model
+            train_mlp_model(model, train_features_tensor, train_labels_tensor, num_epochs=20, batch_size=32, learning_rate=0.001)
+
+            # Save the model to file
+            save_model(model, file_path[model_name])
+
+        # Evaluate the MLP model
+        print(f"\nEvaluating {model_name} model...")
+
+        # Convert featutures and lables to tensors
+        predictions = predict_mlp(model, test_features_tensor)
+
+        # Get the metrics for the MLP model
+        metrics = evaluate_model(model_name, predictions, test_labels_tensor.numpy(), class_labels)
+        # Save the metrics for the MLP model
+        metrics_summary[model_name] = metrics
+        print(f"\n{model_name} model metrics: {metrics}")
+
+    # -------------------- Summary -------------------- #
+
     # Summarize the metrics for all the tested models
     summarize_metrics(metrics_summary)
+
+
+
 
 
