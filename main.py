@@ -14,8 +14,13 @@ from load_data import get_test_features_pca, get_train_features_pca, get_train_l
 from naives_bayes import GaussianNaiveBayes
 from sklearn.naive_bayes import GaussianNB
 
+#
+from sklearn.tree import DecisionTreeClassifier
+from tree import DecisionTree
+
 # Import the evaluation functions to show the performance of the models
 from evaluation import evaluate_model, summarize_metrics
+
 
 # Function to save the model to a file
 def save_model(model, file_path):
@@ -41,7 +46,9 @@ if __name__ == "__main__":
     # Dictionary used to store the different file path used to save and load the model
     file_path = {
         "custom_naives_bayes": os.path.join(model_dir, "custom_naives_bayes.pt"),
-        "sklearn_naives_bayes": os.path.join(model_dir, "sklearn_naives_bayes.pt")
+        "sklearn_naives_bayes": os.path.join(model_dir, "sklearn_naives_bayes.pt"),
+        "sklearn_decision_tree": os.path.join(model_dir, "sklearn_decision_tree.pt"),
+        "custom_decision_tree": os.path.join(model_dir, "custom_decision_tree.pt")
     }
 
     # Get the training features and labels and tesing features and labels
@@ -104,9 +111,57 @@ if __name__ == "__main__":
     metrics_summary["Sklearn Naive Bayes"] = sklearn_naives_bayes_metrics
     print(f"\nSklearn Gaussian Naive Bayes model metrics: {sklearn_naives_bayes_metrics}")
 
+    
+    
+  # -------------------- Sklearn implemented Decision Tree model -------------------- #
 
+    if os.path.exists(file_path["sklearn_decision_tree"]):
+        # Load model from file
+        print(f"\nLoading model from {file_path['sklearn_decision_tree']}")
+        sklearn_decision_tree = load_model(file_path["sklearn_decision_tree"])
+    else:
+        # Train the model
+        print("\nTraining sklearn Decision Tree model...")
+        sklearn_decision_tree = DecisionTreeClassifier(max_depth=50)
+        sklearn_decision_tree.fit(train_features_pca, train_labels)
 
+        # Save the model to file
+        save_model(sklearn_decision_tree, file_path["sklearn_decision_tree"])
 
+    # Evaluate the Sklearn Decision Tree model
+    print("\nEvaluating sklearn Decision Tree model...")
+    sklearn_decision_tree_predictions = sklearn_decision_tree.predict(test_features_pca)
+
+    # Get the metrics for the Sklearn Decision Tree model
+    sklearn_decision_tree_metrics = evaluate_model("Sklearn Decision Tree", sklearn_decision_tree_predictions, test_labels.numpy(), class_labels)
+    # Save the metrics for the Sklearn Decision Tree model
+    metrics_summary["Sklearn Decision Tree"] = sklearn_decision_tree_metrics
+    print(f"\nSklearn Decision Tree model metrics: {sklearn_decision_tree_metrics}")
+
+ # -------------------- Customly implemented Decision Tree model -------------------- #
+
+    if os.path.exists(file_path["custom_decision_tree"]):
+        # Load model from file
+        print(f"\nLoading model from {file_path['custom_decision_tree']}")
+        custom_decision_tree = load_model(file_path["custom_decision_tree"])
+    else:
+        # Train the model
+        print("\nTraining custom Decision Tree model...")
+        custom_decision_tree = DecisionTree(max_depth=50)
+        custom_decision_tree.fit(train_features_pca, train_labels)
+
+        # Save the model to file
+        save_model(custom_decision_tree, file_path["custom_decision_tree"])
+
+    # Evaluate the Custom Decision Tree model
+    print("\nEvaluating custom Decision Tree model...")
+    custom_decision_tree_predictions = custom_decision_tree.predict(test_features_pca)
+
+    # Get the metrics for the Custom Decision Tree model
+    custom_decision_tree_metrics = evaluate_model("Custom Decision Tree", custom_decision_tree_predictions, test_labels.numpy(), class_labels)
+    # Save the metrics for the Custom Decision Tree model
+    metrics_summary["Custom Decision Tree"] = custom_decision_tree_metrics
+    print(f"\nCustom Decision Tree model metrics: {custom_decision_tree_metrics}")
 
     # Summarize the metrics for all the tested models
     summarize_metrics(metrics_summary)
