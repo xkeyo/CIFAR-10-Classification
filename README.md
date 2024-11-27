@@ -2,6 +2,8 @@
 ## CIFAR-10 Classification Project
 This project implements and evaluates various models for classification tasks on the CIFAR-10 image data. 
 The models includes custom implementations of Gaussian Naive Bayes and Decision Trees
+### **Note** 
+- the cnn.pt file from training the cnn and the data directory were too  large to be commited to git. You can find them in a google drive folder at this link: https://drive.google.com/drive/folders/1LtBqQXRZ44SB2jDJ9PGLq7inKrVjme-Z?usp=drive_link 
 
 ## Files
 
@@ -85,6 +87,4 @@ Simply run the **`main.py`** script
 - Do not reprocess the data to ensure consistency with the results produced in the Report
 - Running **`main.py`** is enough for the training, evaluation and applying the model to the data.
 
-### **Side Note** 
-- the cnn.pt file from training the cnn was too  large to be commited to git. You can find it in a google drive folder at this link: https://drive.google.com/drive/folders/1LtBqQXRZ44SB2jDJ9PGLq7inKrVjme-Z?usp=drive_link 
 
