@@ -37,7 +37,10 @@ The models includes custom implementations of Gaussian Naive Bayes and Decision 
     ```bash
     pip install -r requirements.txt
     ```
-
+3. Alternatively, for conda users, install the dependencies using:
+   ```bash
+      conda env create -f environment.yml
+   ```
 
 ## Steps to Execute the Code
 
