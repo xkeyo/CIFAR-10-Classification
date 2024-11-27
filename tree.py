@@ -1,5 +1,4 @@
 import numpy as np
-import torch
 
 # Decision Tree class implementation
 class DecisionTree:
@@ -80,8 +79,8 @@ class DecisionTree:
 
     # Calculate the gini index
     def _gini(self, y):
-        if isinstance(y, torch.Tensor):
-            y = y.numpy()
+     
+        y = y.numpy()
         m = len(y)
         return 1.0 - sum((np.sum(y == c) / m) ** 2 for c in np.unique(y))
 
@@ -93,8 +92,8 @@ class DecisionTree:
 
     # Find the most common label in the current node
     def _most_common_label(self, y):
-        if isinstance(y, torch.Tensor):
-            y = y.numpy()
+
+        y = y.numpy()
         return np.bincount(y).argmax()
 
     # Predict labels for a dataset

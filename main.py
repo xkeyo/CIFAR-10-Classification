@@ -28,6 +28,8 @@ import MLP.mlp_variant4 as mlp_4
 from torchvision import transforms, datasets
 from torch.utils.data import DataLoader
 from cnn import VGG11, train_model, predict
+from cnn2 import VGG11LargerKernel
+
 from torchvision.datasets import CIFAR10
 # Import the evaluation functions to show the performance of the models
 from evaluation import evaluate_model, summarize_metrics
@@ -61,12 +63,14 @@ if __name__ == "__main__":
         "sklearn_naives_bayes": os.path.join(model_dir, "sklearn_naives_bayes.pt"),
         "sklearn_decision_tree": os.path.join(model_dir, "sklearn_decision_tree.pt"),
         "custom_decision_tree": os.path.join(model_dir, "custom_decision_tree.pt"),
+        "custom2_decision_tree": os.path.join(model_dir, "custom2_decision_tree.pt"),
         "mlp_base": os.path.join(model_dir, "mlp_base.pt"),
         "mlp_1": os.path.join(model_dir, "mlp_1.pt"),
         "mlp_2": os.path.join(model_dir, "mlp_2.pt"),
         "mlp_3": os.path.join(model_dir, "mlp_3.pt"),
         "mlp_4": os.path.join(model_dir, "mlp_4.pt"),
-        "cnn": os.path.join(model_dir, "cnn.pt")
+        "cnn": os.path.join(model_dir, "cnn.pt"),
+        "cnn2": os.path.join(model_dir, "cnn2.pt")
     }
 
     # Get the training features and labels and tesing features and labels
@@ -178,6 +182,32 @@ if __name__ == "__main__":
     # Save the metrics for the Custom Decision Tree model
     metrics_summary["Custom Decision Tree"] = custom_decision_tree_metrics
     print(f"\nCustom Decision Tree model metrics: {custom_decision_tree_metrics}")
+    
+    
+     # -------------------- Customly implemented Decision Tree model (with larger depth) -------------------- #
+
+    if os.path.exists(file_path["custom2_decision_tree"]):
+        # Load model from file
+        print(f"\nLoading model from {file_path['custom2_decision_tree']}")
+        custom_decision_tree = load_model(file_path["custom2_decision_tree"])
+    else:
+        # Train the model
+        print("\nTraining custom Decision Tree model...")
+        custom_decision_tree = DecisionTree(max_depth=75)
+        custom_decision_tree.fit(train_features_pca, train_labels)
+
+        # Save the model to file
+        save_model(custom_decision_tree, file_path["custom2_decision_tree"])
+
+    # Evaluate the Custom Decision Tree model
+    print("\nEvaluating custom Decision Tree model...")
+    custom_decision_tree_predictions = custom_decision_tree.predict(test_features_pca)
+
+    # Get the metrics for the Custom Decision Tree model
+    custom_decision_tree_metrics = evaluate_model("Custom Decision Tree", custom_decision_tree_predictions, test_labels.numpy(), class_labels)
+    # Save the metrics for the Custom Decision Tree model
+    metrics_summary["Custom Decision Tree (deeper)"] = custom_decision_tree_metrics
+    print(f"\nCustom Decision Tree model metrics: {custom_decision_tree_metrics}")
 
     # -------------------- Multi-layer Perceptron model (MLP)-------------------- #
 
@@ -259,7 +289,8 @@ if __name__ == "__main__":
 
     train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
     test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
-
+    
+# -------------------- Convolutional Neural Network models 1 (CNN)-------------------- #
     # CNN Training and Evaluation
     if os.path.exists(file_path["cnn"]):
         print(f"\nLoading cnn model from {file_path['cnn']}")
@@ -282,9 +313,39 @@ if __name__ == "__main__":
     predictions = predict(cnn.to(device), test_loader, device)
 
     cnn_metrics = evaluate_model("cnn", predictions[:len(test_labels)], test_labels.numpy(), class_labels)
+    
+    
     # Save the metrics for the Custom Decision Tree model
     metrics_summary["cnn"] = cnn_metrics
     print(f"\nCNN model metrics: {cnn_metrics}")
+    
+# -------------------- Convolutional Neural Network models - Larger Kernel (CNN)-------------------- #
+
+        # CNN Training and Evaluation
+    if os.path.exists(file_path["cnn2"]):
+        print(f"\nLoading cnn2 model from {file_path['cnn2']}")
+        cnn = load_model(file_path["cnn2"])
+    else:
+
+
+        # Now fit the model
+        print("\nTraining cnn2 model...")
+        cnn = VGG11LargerKernel(num_classes=10).to(device)  # Ensure the device is CUDA or CPU
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(cnn.parameters(), lr=0.01, momentum=0.9)
+        num_epochs = 10
+        
+        train_model(cnn, train_loader, criterion, optimizer, num_epochs, device)
+        save_model(cnn, file_path["cnn2"])
+
+    # Evaluate the CNN model
+    print("\nEvaluating CNN2 model...")
+    predictions = predict(cnn.to(device), test_loader, device)
+
+    cnn_metrics = evaluate_model("cnn2", predictions[:len(test_labels)] , test_labels.numpy(), class_labels)
+    # Save the metrics for the Custom Decision Tree model
+    metrics_summary["cnn2"] = cnn_metrics
+    print(f"\nCNN2 model metrics: {cnn_metrics}")
     # -------------------- Summary -------------------- #
 
     # Summarize the metrics for all the tested models
