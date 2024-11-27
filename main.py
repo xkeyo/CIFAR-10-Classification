@@ -41,7 +41,8 @@ def save_model(model, file_path):
 # Function to load the model from a file
 def load_model(file_path):
     warnings.simplefilter("ignore", category=FutureWarning)
-    model = torch.load(file_path)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = torch.load(file_path, map_location=device)
     print(f"Model loaded from {file_path}")
     return model
 
@@ -232,7 +233,7 @@ if __name__ == "__main__":
 # -------------------- Convolutional Neural Network models (CNN)-------------------- #
 # Print the number of test labels
     print(torch.cuda.is_available())  
-    print(torch.cuda.get_device_name(0))  
+    #print(torch.cuda.get_device_name(0))  
     
   # Set device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
