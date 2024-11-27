@@ -25,7 +25,10 @@ import MLP.mlp_variant1 as mlp_1
 import MLP.mlp_variant2 as mlp_2
 import MLP.mlp_variant3 as mlp_3
 import MLP.mlp_variant4 as mlp_4
-
+from torchvision import transforms, datasets
+from torch.utils.data import DataLoader
+from cnn import VGG11, train_model, predict
+from torchvision.datasets import CIFAR10
 # Import the evaluation functions to show the performance of the models
 from evaluation import evaluate_model, summarize_metrics
 
@@ -61,7 +64,8 @@ if __name__ == "__main__":
         "mlp_1": os.path.join(model_dir, "mlp_1.pt"),
         "mlp_2": os.path.join(model_dir, "mlp_2.pt"),
         "mlp_3": os.path.join(model_dir, "mlp_3.pt"),
-        "mlp_4": os.path.join(model_dir, "mlp_4.pt")
+        "mlp_4": os.path.join(model_dir, "mlp_4.pt"),
+        "cnn": os.path.join(model_dir, "cnn.pt")
     }
 
     # Get the training features and labels and tesing features and labels
@@ -223,6 +227,63 @@ if __name__ == "__main__":
         metrics_summary[model_name] = metrics
         print(f"\n{model_name} model metrics: {metrics}")
 
+
+
+# -------------------- Convolutional Neural Network models (CNN)-------------------- #
+# Print the number of test labels
+    print(torch.cuda.is_available())  
+    print(torch.cuda.get_device_name(0))  
+    
+  # Set device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    print(f"\nUsing device: {device}")
+    
+    # Define data loaders
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    ])
+    
+    # transform = transforms.Compose(
+    #     [transforms.Resize((224,224)),     
+    #     transforms.ToTensor(),             
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406],
+    #                         std=[0.229, 0.224, 0.225])      
+    # ])
+    
+    # Load the CIFAR-10 dataset
+    train_dataset = CIFAR10(root='./data', train=True, download=True, transform=transform)
+    test_dataset = CIFAR10(root='./data', train=False, download=True, transform=transform)
+
+    train_loader = DataLoader(train_dataset, batch_size=32, shuffle=True, num_workers=2)
+    test_loader = DataLoader(test_dataset, batch_size=32, shuffle=False, num_workers=2)
+
+    # CNN Training and Evaluation
+    if os.path.exists(file_path["cnn"]):
+        print(f"\nLoading cnn model from {file_path['cnn']}")
+        cnn = load_model(file_path["cnn"])
+    else:
+
+
+        # Now fit the model
+        print("\nTraining cnn model...")
+        cnn = VGG11(num_classes=10).to(device)  # Ensure the device is CUDA or CPU
+        criterion = torch.nn.CrossEntropyLoss()
+        optimizer = torch.optim.SGD(cnn.parameters(), lr=0.01, momentum=0.9)
+        num_epochs = 10
+        
+        train_model(cnn, train_loader, criterion, optimizer, num_epochs, device)
+        save_model(cnn, file_path["cnn"])
+
+    # Evaluate the CNN model
+    print("\nEvaluating CNN model...")
+    predictions = predict(cnn.to(device), test_loader, device)
+
+    cnn_metrics = evaluate_model("cnn", predictions[:len(test_labels)], test_labels.numpy(), class_labels)
+    # Save the metrics for the Custom Decision Tree model
+    metrics_summary["cnn"] = cnn_metrics
+    print(f"\nCNN model metrics: {cnn_metrics}")
     # -------------------- Summary -------------------- #
 
     # Summarize the metrics for all the tested models
